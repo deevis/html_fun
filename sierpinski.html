@@ -1,0 +1,74 @@
+<html>
+  <body>
+    <canvas id="myCanvas" width="1500" height="1100" style="border: 1px solid black;"></canvas>
+  </body>
+  <script>
+    var canvas = document.getElementById("myCanvas");
+    var canvasWidth = canvas.width;
+    var canvasHeight = canvas.height;
+    var ctx = canvas.getContext("2d");
+    var canvasData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+    // That's how you define the value of a pixel //
+    function drawPixel (point, r, g, b, a) {
+        x = parseInt(point[0]);
+        y = parseInt(point[1]);
+        var index = (x + y * canvasWidth) * 4;
+        canvasData.data[index + 0] = r;
+        canvasData.data[index + 1] = g;
+        canvasData.data[index + 2] = b;
+        canvasData.data[index + 3] = a;
+    }
+
+    // That's how you update the canvas, so that your //
+    // modification are taken in consideration //
+    function updateCanvas() {
+        ctx.putImageData(canvasData, 0, 0);
+    }
+    
+    let p1 = [canvasWidth/2,0];
+    let p2 = [0, canvasHeight];
+    let p3 = [canvasWidth,canvasHeight];
+
+    drawPixel(p1,255,0,0,255);
+    drawPixel(p2,255,0,0,255);
+    drawPixel(p3,255,0,0,255);
+
+    var p = [p1[0], p1[1]];
+    var rand;
+    var totalPoints = 0;
+
+    function jumpMidway(to_point) {
+        p[0] = (p[0] + to_point[0])/2;
+        p[1] = (p[1] + to_point[1])/2;        
+    }
+
+    function computePoints(count) {
+        if (count === undefined) {
+            count = 1000;
+        }
+        for (var i = 0; i < count; i++) {
+            rand = Math.random();
+            if (rand > 0.6666) {
+                jumpMidway(p1);
+                drawPixel(p,255,0,0,255);
+            } else if (rand > 0.3333) {
+                jumpMidway(p2);
+                drawPixel(p,0,255,0,255);
+            } else {
+                jumpMidway(p3);
+                drawPixel(p,0,0,255,255);
+            }
+        }
+        updateCanvas();
+        totalPoints += count;
+        if (totalPoints < 2000000) {
+            setTimeout(computePoints, 10)
+        } else {
+            console.log("done");
+        }
+    }
+
+    setTimeout(computePoints, 100)
+  </script>
+</html>
