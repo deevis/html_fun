@@ -1,0 +1,87 @@
+<html>
+<head>
+<title>Panoramic</title>
+
+<script>
+
+    // shim layer with setTimeout fallback
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       ||
+              window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame    ||
+              window.oRequestAnimationFrame      ||
+              window.msRequestAnimationFrame     ||
+              function( callback ){
+                window.setTimeout(callback, 500 / 60);
+              };
+    })();
+
+
+var img = new Image();
+
+//User Variables
+img.src = 'Yosemite_National_Park.jpg';
+var CanvasXSize = 1400;
+var CanvasYSize = 800;
+var speed = 5; //lower is faster
+var scale = 3;
+var y = -4.5; //vertical offset
+//End User Variables
+
+var dx = 3;
+var imgW;
+var imgH;
+var x = 0;
+if (imgW > CanvasXSize) { x = CanvasXSize-imgW; } // image larger than canvas
+var clearX;
+var clearY;
+if (imgW > CanvasXSize) { clearX = imgW; } // image larger than canvas
+else { clearX = CanvasXSize; }
+if (imgH > CanvasYSize) { clearY = imgH; } // image larger than canvas
+else { clearY = CanvasYSize; }
+var ctx;
+
+function init() {
+	imgW = img.width*scale;
+	imgH = img.height*scale;
+console.log(img.width);
+console.log(imgH);
+    //Get Canvas Element
+    ctx = document.getElementById('canvas').getContext('2d');
+    //Set Refresh Rate
+    draw();
+}
+
+function draw() {
+    //Clear Canvas
+    ctx.clearRect(0,0,clearX,clearY);
+    //If image is <= Canvas Size
+    if (imgW <= CanvasXSize) {
+        //reset, start from beginning
+        if (x > (CanvasXSize)) { x = 0; }
+        //draw aditional image
+        if (x > (CanvasXSize-imgW)) { ctx.drawImage(img,x-CanvasXSize+1,y,imgW,imgH); }
+    }
+    //If image is > Canvas Size
+    else {
+        //reset, start from beginning
+        if (x > (CanvasXSize)) { x = CanvasXSize-imgW; }
+        //draw aditional image
+        if (x > (CanvasXSize-imgW)) { ctx.drawImage(img,x-imgW+1,y,imgW,imgH); }
+    }
+    //draw image
+    ctx.drawImage(img,x,y,imgW,imgH);
+	//console.log("draw " + x + ", " + y + ", " + imgW + ", " + imgH + ", " + img.width);
+    //amount to move
+    x += dx;
+    requestAnimFrame(draw);
+}
+</script>
+
+
+</head>
+<body onload="init();">
+<canvas id="canvas" width="1400" height="800"></canvas>
+<input type="range" value="25" min="-200" max="200" onChange="dx = this.value / 10;" />
+</body>
+</html>

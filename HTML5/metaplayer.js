@@ -1,0 +1,99 @@
+    var index = 0;
+    var player = $("#videoPlayer")[0];
+    var ctx = $("#metaPlayerControls")[0].getContext("2d");
+    var loop = true;
+    var duration = 1;
+    var drawing = false;
+
+    function initMetaPlayerControls() {
+      duration = player.duration;
+      controlsFromData();
+    }
+
+    function controlsFromData() {
+      metaControls = $("#metaControls");
+      metaControls.empty();
+      for( var i = 0; i < data.length; i++ ) {
+	metaControls.append('<div class="meta_control"><input type="text" class="metaRange" value="' + data[i]["start"] + '" id="range_' + i + '_start"/><input type="text" class="metaRange" value="' + data[i]["stop"] + '" id="range_' + i + '_end"/><input type="checkbox" id="range_' + i + '_active" value="1" checked/></div');
+      }
+      $(".metaRange").dblclick(function(){ $(this).val( player.currentTime );return false;});
+      
+    }
+
+    function dataFromControls() {
+      player.pause();
+      var i = 0;
+      data = [];
+      do {
+	rangeActive = $("#range_"+i+"_active");
+	startRange = $("#range_"+i+"_start");
+	endRange = $("#range_"+i+"_end");
+	if ( rangeActive.length > 0 && rangeActive.is(":checked")) {	
+	  data.push({"start":startRange.val(), "stop":endRange.val()});
+	}
+	i++;
+      } while (rangeActive.length > 0)
+      index = 0;
+      startPlaying();
+    }
+
+    function startPlaying() {
+      if ( index < data.length ) {
+	player.currentTime = data[index]["start"];
+	player.play();
+      }
+    }
+
+    function stopPlaying() {
+      player.pause();
+    }
+
+    function checkStop() {
+      drawControls();
+      if ( index < data.length ) {
+	if (player.currentTime > data[index]["stop"]) {
+	  player.pause();
+	  index++;
+	  if ( index >= data.length && loop ) {
+	    index = 0;
+	  }
+	  if ( index < data.length ) {
+	    startPlaying();
+	  }
+	}
+      }
+    }
+
+
+    function drawControls() {
+      if (drawing) return;
+      drawing = true;
+      width = 500;
+      ctx.fillStyle="white";
+      ctx.fillRect(0,0,width,30);
+      ctx.stroke();
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.strokeStyle="black";
+      ctx.moveTo(0,10);
+      ctx.lineTo(width,10);
+      ctx.stroke();
+      ctx.lineWidth=5;
+      for ( var i = 0; i < data.length; i++ ) {
+	ctx.beginPath();
+	ctx.strokeStyle="blue";
+	ctx.moveTo( Math.round((width*data[i]["start"]/duration)),10)
+	ctx.lineTo( Math.round((width*data[i]["stop"]/duration)),10)
+	ctx.stroke();
+      }
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.strokeStyle="green";
+      ctx.moveTo( Math.round((width*player.currentTime/duration)),0)
+      ctx.lineTo( Math.round((width*player.currentTime/duration)),20)
+      ctx.stroke();
+      drawing = false;
+    }
+
+    player.addEventListener("loadeddata", initMetaPlayerControls);
+    player.addEventListener('timeupdate', checkStop);

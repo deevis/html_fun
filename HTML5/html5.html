@@ -1,0 +1,76 @@
+<html lang="en">
+	<head>
+		<title>Testing HTML5</title>
+	</head>
+
+	<body>
+
+		<div id="helloAlert" contenteditable="true">
+			This will get alerted when the page is loaded.  Select to edit...
+		</div>
+
+		<script>
+var addEvent = (function () {
+  if (document.addEventListener) {
+    return function (el, type, fn) {
+      if (el && el.nodeName || el === window) {
+        el.addEventListener(type, fn, false);
+      } else if (el && el.length) {
+        for (var i = 0; i < el.length; i++) {
+          addEvent(el[i], type, fn);
+        }
+      }
+    };
+  } else {
+    return function (el, type, fn) {
+      if (el && el.nodeName || el === window) {
+        el.attachEvent('on' + type, function () { return fn.call(el, window.event); });
+      } else if (el && el.length) {
+        for (var i = 0; i < el.length; i++) {
+          addEvent(el[i], type, fn);
+        }
+      }
+    };
+  }
+})();			var helloAlert = document.getElementById('helloAlert');
+
+			addEvent(helloAlert, 'blur', function () {
+				localStorage.setItem("helloAlert", this.innerHTML);
+				helloAlert.style.backgroundColor="#ffffff";
+				document.designMode = 'off';
+			});
+
+			addEvent(helloAlert, 'focus', function () {
+				document.designMode = 'on';
+				helloAlert.style.backgroundColor="#ffff00";
+			});
+
+
+			if (localStorage.getItem("helloAlert")) {
+				helloAlert.innerHTML = localStorage.getItem("helloAlert");
+				alert(localStorage.getItem("helloAlert"));
+			}
+		</script>
+
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+		    <article>
+		      <p>Finding your location: <span id="status"> checking...</span></p>
+		    </article>
+		<script>
+		function success(position) {
+			console.log("Hello");
+			s = document.getElementById("status");
+			s.innerHTML = position.coords.latitude + "," + position.coords.longitude;
+		}
+
+		function error(msg) {
+		  var s = document.querySelector('#status');
+		  s.innerHTML = typeof msg == 'string' ? msg : "failed";
+		  s.className = 'fail';
+
+		  console.log(arguments);
+		}
+
+		</script>
+	</body>
+</html>

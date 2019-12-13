@@ -1,0 +1,70 @@
+<html>
+
+<head><title>Bar Graph</title>
+
+<script src="js/Three.js"></script>
+
+</head>
+
+<body>
+
+
+<script>
+
+var renderer = new THREE.WebGLRenderer({antialias:true});
+width = document.body.clientWidth;
+height = document.body.clientHeight;
+renderer.setSize(width, height);
+
+document.body.appendChild(renderer.domElement);
+renderer.setClearColorHex(0xEEEEEE, 1.0);
+renderer.clear();
+
+var camera = new THREE.PerspectiveCamera(45, width/height, 1, 10000);
+camera.position.z = 300;
+
+var scene  = new THREE.Scene();
+var cube = new THREE.Mesh(new THREE.CubeGeometry(50,50,50),	new THREE.MeshLambertMaterial({color: 0xff0000}));
+
+scene.add(cube);
+
+
+      var down = false;
+      var sx = 0, sy = 0;
+
+      window.onmousedown = function (ev){
+        down = true; sx = ev.clientX; sy = ev.clientY;
+      };
+      window.onmouseup = function(){ down = false; };
+      window.onmousemove = function(ev) {
+        if (down) {
+          var dx = ev.clientX - sx;
+          var dy = ev.clientY - sy;
+          camera.position.x += dx;
+          camera.position.y += dy;
+          sx += dx;
+          sy += dy;
+        }
+      }
+
+
+
+var light = new THREE.SpotLight();
+light.position.set(170,330,-160);
+scene.add(light);
+
+//var grid = null;	// This will be our data
+//var barGraph = new THREE.Object3D();
+//scene.add(barGraph);
+
+drawScene();
+
+function drawScene() {
+	renderer.render(scene, camera);
+	requestAnimationFrame(drawScene);
+}
+
+</script>
+
+</body>
+</html>

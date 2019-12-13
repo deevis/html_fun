@@ -1,0 +1,97 @@
+<html>
+<head>
+<title>Fast Tree?!?</title>
+</head>
+
+<body>
+<script>
+
+	var Node = function(parent, user_login_id) {
+		this.p = parent;			// Another node
+		this.u = user_login_id;		// A String
+		this.c = []; 				// An array of nodes
+	}
+
+	var data = "A B E K,B F,A C G L,C H,C I M,I N,A D J";
+
+	branches = data.split(",");
+	for( i=0;i<branches.length;i++ ) {
+		document.writeln(branches[i]);
+		document.writeln("<br/>");
+	}
+
+
+	function buildTree(data) {
+		for( i=0;i<branches.length;i++ ) {
+			branch = branches[i];
+			ids = branch.split(" ");
+			while ( node != null && node.u != ids[0] ) {
+				node = node.p;
+			}
+			if ( node == null ) {
+				node = new Node(null, ids[0]);
+				tree = node;
+			}
+			for ( x = 1; x < ids.length; x++ ) {
+				nextNode = new Node( node, ids[x]);
+				node.c.push(nextNode);
+				node = nextNode;
+			}
+		}
+	}
+
+	function depthDumpTree(myNode) {
+		var n = myNode;
+		document.writeln(n.u);
+		document.writeln("<br>");
+		for ( var i = 0; i < n.c.length; i++ ) {
+			depthDumpTree(n.c[i]);
+		}
+	}
+
+	var bq = new Array();
+
+	var counter = 0;
+	function breadthDumpTree(myNode) {
+		counter = 1;
+		bq.push(myNode);
+		level = 1
+		while (bq.length > 0) {
+			var n = bq.shift();
+			document.writeln(counter + " : " + n.u + "<br/>");
+			counter++;
+			for ( i=0;i<n.c.length;i++) {
+				bq.push(n.c[i]);
+			}
+		}
+	}
+
+
+	function buildDemoTree(node, level) {
+		if ( level > 7 )
+			return;
+		node.c.push(new Node(node, node.u + "A"));
+		node.c.push(new Node(node, node.u + "B"));
+		node.c.push(new Node(node, node.u + "C"));
+		node.c.push(new Node(node, node.u + "D"));
+		for ( var i =0; i<node.c.length;i++) {
+			buildDemoTree(node.c[i], level+1);
+		}
+	}
+
+	var node, tree;
+
+	buildTree(data);
+	depthDumpTree(tree);
+	breadthDumpTree(tree);
+
+	tree = new Node(null, "A");
+	buildDemoTree(tree, 0);
+
+	depthDumpTree(tree);
+	breadthDumpTree(tree);
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<html>
+<head>
+<title>Web Audio Demo</title>
+
+<script>
+
+var c = new webkitAudioContext();
+
+var mouseX = 0, mouseY = 0, windowHalfX = window.innerWidth / 2, windowHalfY = window.innerHeight / 2, camera, scene, renderer, material, container;
+var analyser;
+var buffer;
+var audioBuffer;
+var dropArea;
+var audioContext;
+var source;
+var processor;
+var analyser;
+var xhr;
+var started = false;
+
+var freqVisualizer, timeVisualizer;
+
+var source = c.createBufferSource();
+
+
+var freqByteData;
+var timeByteData;
+
+var timeCanvas, timeContext;
+var fftCanvas, fftContext;
+
+    // shim layer with setTimeout fallback
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       ||
+              window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame    ||
+              window.oRequestAnimationFrame      ||
+              window.msRequestAnimationFrame     ||
+              function( callback ){
+                window.setTimeout(callback, 500 / 60);
+              };
+    })();
+
+function onDocumentDragOver(evt) {
+	evt.stopPropagation();
+	evt.preventDefault();
+	return false;
+}
+
+function onDocumentDrop(evt) {
+	console.log("dropped");
+	evt.stopPropagation();
+	evt.preventDefault();
+
+	//clean up previous mp3
+	if (source) source.disconnect();
+	//LoopVisualizer.remove();
+
+
+	document.getElementById("loading").display="block";
+	document.getElementById("loading").innerHTML="loading...";
+
+	var droppedFiles = evt.dataTransfer.files;
+
+	var reader = new FileReader();
+
+	reader.onloadend = function(fileEvent) {
+		if (fileEvent.target.readyState == FileReader.DONE) {	// FileReader.DONE == 2
+			console.log("file loaded");
+			var data = fileEvent.target.result;
+			initAudio(data);
+		} else {
+			console.log("DOH");
+
+		}
+	};
+	reader.onerror = function(data) {
+		alert("Error reading file : " + data);
+	}
+	console.log("start reading " + droppedFiles[0].name  );
+	reader.readAsArrayBuffer(droppedFiles[0]);
+	console.log("finished reading");
+	return false;
+}
+
+
+function initAudio(data) {
+	console.log("initAudio(???)");
+	document.getElementById("loading").innerHTML="Decoding audio";
+	source = audioContext.createBufferSource();
+
+	if(audioContext.decodeAudioData) {
+		audioContext.decodeAudioData(data, function(buffer) {
+			source.buffer = buffer;
+			createAudio();
+		}, function(e) {
+			console.log(e);
+			document.getElementById("loading").innerHTML="cannot decode mp3";
+		});
+	} else {
+		source.buffer = audioContext.createBuffer(data, false );
+		createAudio();
+	}
+}
+
+
+function createAudio() {
+	console.log("createAudio...");
+	processor = audioContext.createJavaScriptNode(2048 , 1 , 1 );
+	//processor.onaudioprocess = processAudio;
+
+	analyser = audioContext.createAnalyser();
+
+	source.connect(audioContext.destination);
+	source.connect(analyser);
+
+	analyser.connect(processor);
+	processor.connect(audioContext.destination);
+
+	freqByteData = new Uint8Array(analyser.frequencyBinCount);
+	timeByteData = new Uint8Array(analyser.frequencyBinCount);
+
+	document.getElementById("loading").innerHTML="Playing Song!!!";
+	source.noteOn(0);
+	setTimeout(doSampling, 100);
+}
+
+function init() {
+
+	freqVisualizer = document.getElementById("freqVisualizer");
+	timeVisualizer = document.getElementById("timeVisualizer");
+
+	//init listeners
+	document.getElementById("loading").innerHTML='drop mp3 here';
+	document.addEventListener("documentMouseMove", onDocumentMouseMove );
+	window.addEventListener("resize", onWindowResize );
+	document.addEventListener('drop', onDocumentDrop, false);
+	document.addEventListener('dragover', onDocumentDragOver, false);
+	console.log("init() finished");
+	audioContext = new window.webkitAudioContext();
+
+	timeCanvas = document.getElementById("wave");
+	timeContext = timeCanvas.getContext("2d");
+
+	fftCanvas = document.getElementById("fft");
+	fftContext = fftCanvas.getContext("2d");
+
+}
+
+
+function onDocumentMouseMove(event) {
+	mouseX = (event.clientX - windowHalfX)*2;
+	mouseY = (event.clientY - windowHalfY)*2;
+}
+
+function onWindowResize(event) {
+	windowHalfX = window.innerWidth / 2;
+	windowHalfY = window.innerHeight / 2;
+	//camera.aspect = window.innerWidth / window.innerHeight;
+	//camera.updateProjectionMatrix();
+	//renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+
+function doSampling() {
+		analyser.smoothingTimeConstant = 0.1;
+		analyser.getByteFrequencyData(freqByteData);
+		analyser.getByteTimeDomainData(timeByteData);
+		//freqVisualizer.innerHTML = buildArrayString(freqByteData);
+		//timeVisualizer.innerHTML = buildArrayString(timeByteData);
+
+		doDraw(timeByteData, timeCanvas, timeContext, 256, "#ff0000");
+		doDraw(freqByteData, fftCanvas, fftContext, 768, "#0000ff");
+
+
+		requestAnimFrame(doSampling);
+}
+
+function doDraw(data, canvas, context, width, color) {
+		context.fillStyle = "rgba(255,255,255,0.66)";
+		context.fillRect(0,0,canvas.width,canvas.height);
+		//canvas.width = canvas.width;						// Clears the drawing area
+		context.beginPath();
+		context.strokeStyle = color;					// Our pen color
+		context.moveTo(0,canvas.height-data[0]);	// Draw the time data
+		for ( i = 1; i < width; i++ ) {
+			context.lineTo(i,255-data[i]);
+			context.stroke();
+		}
+		context.closePath();
+}
+
+function buildArrayString( a ) {
+		dataString = "";
+		for ( i = 0; i < a.length; i++ ) {
+			dataString += a[i] + " ";
+			if ( i % 50 == 49 )
+				dataString += "<br/>";
+		}
+	return dataString;
+}
+
+</script>
+
+</head>
+
+<body onload="init();">
+
+<div id="loading" width="500" height="200">Status</div>
+
+<div id="freqVisualizer" width="512" height="200">Freq Visualizer</div>
+
+<div id="timeVisualizer" width="512" height="200">Time Visualizer</div>
+
+<canvas id="wave" width="1024" height="255"></canvas>
+<canvas id="fft" width="1024" height="512"></canvas>
+</body>
+</html>

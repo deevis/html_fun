@@ -1,0 +1,303 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+      #myCanvas {
+        border: 1px solid #9C9898;
+      }
+
+      #controls {
+      	position:fixed;
+      	top:30px;
+      	right:50px;
+      	background-color: #ffffff;
+      	opacity: .5;
+      	padding:10px;
+      }
+
+	#video {
+		position: absolute;
+		text-align: center;
+		top: 300px;
+		width: 100%;
+		padding: 5px;
+	}
+
+      #fps {
+      	position: absolute;
+      	bottom:5px;
+      	right:5px;
+      	color: red;
+      }
+
+    </style>
+    <script>
+    // shim layer with setTimeout fallback
+    window.requestAnimFrame = (function(){
+      return  window.requestAnimationFrame       ||
+              window.webkitRequestAnimationFrame ||
+              window.mozRequestAnimationFrame    ||
+              window.oRequestAnimationFrame      ||
+              window.msRequestAnimationFrame     ||
+              function( callback ){
+                window.setTimeout(callback, 500 / 60);
+              };
+    })();
+      var points = new Array();
+      var maxLineCount = 100;
+	  var canvasBackground = "#000000";  	// "#0303ff";
+      var lineCount = 40;
+      var drawWidth = 10;
+	  var deltaRotation = 180;
+	  var useWidth = false;
+	  var alphaFade = 0.1;
+
+      var canvas = null;
+      var context = null;
+      var frameCount = null;
+	  var debug = false;
+	  var cX = -1;		// center
+	  var cY = -1;		// center
+
+	  var rotation = 0;
+
+      window.onload = function() {
+        canvas = document.getElementById("myCanvas");
+	    canvas.width = window.innerWidth-20;
+	    canvas.height = window.innerHeight-20;
+	    cX = canvas.width / 2;
+	    cY = canvas.height / 2;
+        context = canvas.getContext("2d");
+		context.fillStyle = "#0303ff"; // "#000000";
+        nextPoint();
+       	window.setTimeout(showFps, 1000);
+		render();
+     };
+
+
+	function drawPointsConnected() {
+		for( i=1;i<points.length && i<lineCount;i++) {
+			context.beginPath();
+			//context.moveTo(cX, cY);
+			context.moveTo(points[i-1].x, points[i-1].y);
+			context.lineWidth= points[i].width;
+			context.lineTo(points[i].x, points[i].y);
+			context.strokeStyle = points[i].strokeStyle;
+			context.stroke();
+			context.closePath();
+		}
+		// Make it connected
+		context.beginPath();
+		//context.moveTo(cX, cY);
+		context.moveTo(points[points.length-1].x, points[points.length-1].y);
+		context.lineWidth= points[0].width;
+		context.lineTo(points[0].x, points[0].y);
+		context.strokeStyle = points[0].strokeStyle;
+		context.stroke();
+		context.closePath();
+	}
+
+
+	function drawPointsLineSegments() {
+		nextPoint();	// We want entire segments to come and go, so add an extra point so we go in twos
+		for( i=1;i<points.length && i<lineCount;i+=2) {
+			context.beginPath();
+			//context.moveTo(cX, cY);
+			context.moveTo(points[i-1].x, points[i-1].y);
+			context.lineWidth= points[i].width;
+			context.lineTo(points[i].x, points[i].y);
+			context.strokeStyle = points[i].strokeStyle;
+			context.stroke();
+			context.closePath();
+		}
+	}
+
+
+	function drawPointsFromCenter() {
+		for( i=1;i<points.length && i<lineCount;i++) {
+			context.beginPath();
+			context.moveTo(cX, cY);
+			context.lineWidth= points[i].width;
+			context.lineTo(points[i].x, points[i].y);
+			context.strokeStyle = points[i].strokeStyle;
+			context.stroke();
+			context.closePath();
+		}
+		// Make it connected
+		context.beginPath();
+		context.moveTo(cX, cY);
+		context.lineWidth= points[0].width;
+		context.lineTo(points[0].x, points[0].y);
+		context.strokeStyle = points[0].strokeStyle;
+		context.stroke();
+		context.closePath();
+	}
+
+	function drawPointsCircles() {
+		for( i=0;i<points.length && i<lineCount;i++) {
+			context.beginPath();
+			w = points[i].width * 4;
+			context.arc(points[i].x, points[i].y, w, 0, 2 * Math.PI, false);
+			context.fillStyle = points[i].strokeStyle;
+			context.fill();
+			context.lineWidth = 2;
+			context.strokeStyle = "white";
+			context.stroke();
+			context.closePath();
+		}
+	}
+
+
+	function drawPointsQuadratic() {
+
+
+	}
+
+	var image = new Image();
+	image.src = "HTML5.png";
+	function drawPointsImages() {
+		for( i=0;i<points.length && i<lineCount;i++) {
+			p = points[i];
+			//context.translate(p.x,p.y);
+			context.drawImage(image, p.x, p.y, 32 + (p.width * 8), 32 + (p.width * 8));
+			//context.rotate(rotation/(800));
+			//context.translate(-1*p.x,-1*p.y);
+		}
+	}
+
+	var spriteStrip = new Image();
+	var animFrame = 0;
+	spriteStrip.src = "walksequence_spritesheet-512.png";
+	function drawPointsAnimation() {
+		for( i=0;i<points.length && i<lineCount;i++) {
+			p = points[i];
+			f = Math.floor(p.animFrame);
+			row = Math.floor((f % 30) / 6);
+			col = (f % 6);
+			context.drawImage(spriteStrip, col * 85, row * 105, 85, 105, p.x, p.y, 42 + (p.width * 5), 64 + (p.width * 9));
+			p.animFrame+=p.animRate;
+		}
+	}
+
+	var drawPoints = drawPointsCircles;
+
+     function render() {
+     	frameCount++;
+		//context.clearRect(0, 0, canvas.width, canvas.height);
+		//canvas.width = canvas.width;
+		context.fillStyle = "rgba(0,0,0," + alphaFade + ")";
+		//context.globalCompositeOperation = "source-out"; //"xor";
+		context.fillRect(0,0,canvas.width,canvas.height);
+		context.beginPath();
+		//context.rect(0,0,canvas.width, canvas.height);
+		context.fillStyle = canvasBackground;
+		context.fill();
+		context.strokeStyle = "#000000";
+		context.stroke();
+		context.closePath();
+		nextPoint();
+		context.save();
+		context.translate(cX,cY);
+		context.rotate(rotation);
+		context.translate(-1*cX,-1*cY);
+		drawPoints();
+		context.restore();
+		rotation += (deltaRotation/15000);
+		rotation=rotation % 6.28;
+		requestAnimFrame(render);
+     }
+
+
+
+
+	function nextPoint() {
+		if ( frameCount % 3 > 0 ) return;
+		w = Math.floor(Math.random() * 20 + 2);
+		r = Math.floor(Math.random() * 255 );
+		g = Math.floor(Math.random() * 255 );
+		b = Math.floor(Math.random() * 255 );
+		if (useWidth)
+			w = drawWidth;
+		else
+			w = Math.floor(Math.random() * 20 + 1);
+		ss = "rgb(" + r + ", " + g + ", " + b + ")";
+
+			point = {
+				x: Math.floor(Math.random() * canvas.width),
+				y: Math.floor(Math.random() * canvas.height),
+				width: w,
+				strokeStyle : ss,
+				animFrame : 0,
+				animRate : (Math.random() / 2) + .25
+	     	};
+
+	     	if ( points.length >= maxLineCount ) points.pop();
+	     	points.unshift(point);
+
+	}
+
+	function showFps() {
+		//console.log(frameCount + " " + points.length);
+		fps = document.getElementById("framesPerSecond");
+		fps.innerHTML = 2*frameCount;
+		frameCount = 0;
+        window.setTimeout(showFps, 500);
+	}
+
+	function setDrawingType(type) {
+		canvasBackground = "#000000";
+		if ( type == "drawPointsConnected" )
+			drawPoints = drawPointsConnected;
+		else if ( type == "drawPointsFromCenter" )
+			drawPoints = drawPointsFromCenter;
+		else if ( type == "drawPointsCircles" )
+			drawPoints = drawPointsCircles;
+		else if ( type == "drawPointsLineSegments" )
+			drawPoints = drawPointsLineSegments;
+		else if ( type == "drawPointsImages" )
+			drawPoints = drawPointsImages;
+		else if ( type == "drawPointsAnimation" ) {
+			drawPoints = drawPointsAnimation;
+			//canvasBackground = "#0303ff";
+		}
+
+	}
+
+	function setUseWidth(checked) {
+		selector = document.getElementById("lineWidth");
+		selector.disabled = !checked;
+		useWidth = checked;
+	}
+    </script>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="1000" height="800">
+    </canvas>
+
+    <div id="controls">
+	Type
+	<select id="drawingType" onChange="setDrawingType(this.value);">
+		<option value="drawPointsCircles" >Circles</option>
+		<option value="drawPointsImages" >Badges</option>
+		<option value="drawPointsAnimation" >Running Man</option>
+		<option value="drawPointsLineSegments" >Segments</option>
+		<option value="drawPointsFromCenter" >Radial</option>
+		<option value="drawPointsConnected" >Squiggle</option>
+	</select></br>
+    Points<input id="lineCount" type="range" min="3" value="40" max="200" onChange="lineCount=this.value;"/><br/>
+    Width<input type="checkbox" onchange="setUseWidth(this.checked);"/><input id="lineWidth" type="range" min="1" value="10" max="30" disabled="true" onChange="drawWidth=this.value;"/><br/>
+    Rotation<input id="deltaRotation" type="range" min="-500" value="180" max="500" onChange="deltaRotation=this.value;"/><br/>
+    Fade<input id="alphaFade" type="range" min="5" value="50" max="500" onChange="alphaFade=this.value/500;"/><br/>
+    <div id="fps">
+    <span id="framesPerSecond">0</span> fps
+    </div>
+    </div>
+
+
+
+  </body>
+</html>

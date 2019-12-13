@@ -1,0 +1,36 @@
+<html>
+
+<head>
+</head>
+
+<body>
+
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/jquery-ui.min.js"></script>
+
+  <video id="videoPlayer" preload controls width="240" height="400">
+    <source src="VIDEO0060.3gp" type='video/3gp4' />
+    <source src="VIDEO0060.webm" type='video/webm' />
+  </video>
+  
+  <div id="metaControls">
+  </div>
+  <input type="button" value="Update" onClick="dataFromControls();" />
+  <input type="button" value="Stop" onClick="stopPlaying();" />
+  <input type="button" value="Play" onClick="startPlaying();" />
+  <canvas id="metaPlayerControls" width="500" height="50"/>
+
+  <script type="text/javascript">
+    var data = [	
+			{"start":6.5,"stop":7,"active":true},
+			{"start":10.5,"stop":11,"active":true},
+			{"start":15,"stop":18.8,"active":true},
+			{"start":23.6,"stop":25.9,"active":true},
+			{"start":39.5,"stop":41.8,"active":true}
+		];
+  </script>
+
+  <script type="text/javascript" src="js/meta_player.js"></script>
+</body>
+
+</html>
