@@ -256,7 +256,7 @@ function init()
 	var VIEW_ANGLE = 80, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.01, FAR = 11000;
 
 	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-
+	
 	// RENDERER
 	if ( Detector.webgl ) {
 		renderer = new THREE.WebGLRenderer( {antialias:true} );
@@ -384,40 +384,61 @@ function initObjects() {
 	// VIDEO //
 	///////////
 
-	video = document.getElementById( 'monitor' );
+	video = document.getElementById( 'webcamVideo' );
 
-	videoImage = document.getElementById( 'videoImage' );
-	videoImageContext = videoImage.getContext( '2d' );
+	webcamCanvas = document.getElementById( 'webcamCanvas' );
+	videoImageContext = webcamCanvas.getContext( '2d' );
 	// background color if no video present
 	videoImageContext.fillStyle = '#000000';
-	videoImageContext.fillRect( 0, 0, videoImage.width, videoImage.height );
+	videoImageContext.fillRect( 0, 0, webcamCanvas.width, webcamCanvas.height );
 
-	videoTexture = new THREE.Texture( videoImage );
-	videoTexture.minFilter = THREE.LinearFilter;
-	videoTexture.magFilter = THREE.LinearFilter;
+	videoTexture = new THREE.Texture( webcamCanvas );
+	// Filter will specify how to scale image
+	// NearestFilter - very pixelated when enlarged
+	// NearestMipMapNearestFilter - jagged staircase artifacts when enlarged
+	// NearestMipMapLinearFilter - 'blurred' jagged staircase 
+	// LinearFilter - smooth without much pixelation, but blurry
+	// LinearMipMapNearestFilter - looks like LinearFilter
+	// LinearMipMapLinearFilter - looks about the same as LinearFilter
+	videoTexture.minFilter = THREE.LinearMipMapLinearFilter;
+	videoTexture.magFilter = THREE.LinearMipMapLinearFilter;
 
-	movieMaterial = new THREE.MeshBasicMaterial( { map: videoTexture, overdraw: true, side:THREE.DoubleSide } );
+	movieMaterial = new THREE.MeshBasicMaterial( { map: videoTexture, 
+		overdraw: true, 
+		side:THREE.DoubleSide } );
 	// the geometry on which the movie will be displayed;
 	// 		movie image will be scaled to fit these dimensions.
 	movieGeometry = new THREE.PlaneGeometry( 80, 60, 1, 1 );
 
 
-	buildImageHut( images, "cats", 0, 0);
-	buildImageHut( images, "photography", 200, 200);
-	buildImageHut( images, "drawing", -200, 200);
+	buildImageHut( images["cats"], 0, 0);
+	buildImageHut( images["photography"], 200, 200);
+	buildImageHut( images["drawing"], -200, 200);
 
+	var allImages = images["cats"].concat(images["photography"]).concat(images["drawing"]);
+	buildImageHut( allImages, 0, 400);
+	// buildImageHut( images["photography"] + images["drawing"], 200, 0);
+	// buildImageHut( images["drawing"] , -200, 0);
 }
 
-function buildImageHut(images, category, xOffset, zOffset) {
-	var phi_delta = 6.28/10;
-	var image_urls = images[category];
-	for (var i=1; i <= image_urls.length; i++ ) {
+function buildImageHut(images, xOffset, zOffset) {
+	var count = 10;
+	var radius = 600;
+	var width = radius/count;
+	var height = 60;
+	var phi_delta = 6.28/count;
+	for (var i=1; i <= images.length; i++ ) {
 		var phi = phi_delta * i;
-		var imageMaterial = new THREE.MeshBasicMaterial( { fog: true, size: 60, overdraw: true, side:THREE.DoubleSide, map: THREE.ImageUtils.loadTexture("images/" + image_urls[i-1])});
-		var imageGeometry = new THREE.PlaneGeometry( 60, 60, 4, 4 );
+		var imageUrl = "images/" + images[i-1];
+		// var imageUrl = "https://github.com/deevis/html_fun/tree/master/HTML5/images/" + image_urls[i-1];
+		var imageMaterial = new THREE.MeshBasicMaterial( { fog: true, size: 60, 
+			overdraw: true, 
+			side:THREE.DoubleSide, 
+			map: THREE.ImageUtils.loadTexture(imageUrl)});
+		var imageGeometry = new THREE.PlaneGeometry( width, height, 4, 4 );
 		var image = new THREE.Mesh( imageGeometry, imageMaterial );
 		var x = xOffset + Math.cos(phi)*95;
-		var y= 10 + Math.sin(phi) * 5 + Math.floor(i/10) * 62;
+		var y= 10 + Math.sin(phi) * 5 + Math.floor(i/count) * (height + 2);
 		var z = zOffset + Math.sin(phi)*95;
 		image.position.set(x,y,z);
 		image.rotation.set(0,1.57-phi,0);
@@ -504,7 +525,7 @@ function render()
 {
 	if ( video.readyState === video.HAVE_ENOUGH_DATA )
 	{
-		videoImageContext.drawImage( video, 0, 0, videoImage.width, videoImage.height );
+		videoImageContext.drawImage( video, 0, 0, webcamCanvas.width, webcamCanvas.height );
 		if ( videoTexture )
 			videoTexture.needsUpdate = true;
 	}
@@ -516,33 +537,48 @@ init();
 
 </script>
 
-<!-- Putting these elements (monitor, videoImage) in prior to calling init() cause empty space at the top of the page when document.body. -->
-<video id="monitor" autoplay width="160" height="120" style="visibility: hidden; float:left;"></video>
-<canvas id="videoImage" width="160" height="120" style="visibility: hidden; float:left;"></canvas>
+<!-- Putting these elements (webcamVideo, webcamCanvas) in prior to calling init() cause empty space at the top of the page when document.body. -->
+<video id="webcamVideo" autoplay width="140" height="120" style="visibility: hidden; float:left;">
+</video>
+<canvas id="webcamCanvas" width="140" height="120" style="visibility: hidden; float:left;">
+</canvas>
 
 <script>
 navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
 window.URL = window.URL || window.webkitURL;
 
-var camvideo = document.getElementById('monitor');
+var camvideo = document.getElementById('webcamVideo');
 
-	if (!navigator.getUserMedia)
+	navigator.getUserMedia_ = (   navigator.getUserMedia
+                           || navigator.webkitGetUserMedia 
+                           || navigator.mozGetUserMedia 
+                           || navigator.msGetUserMedia);
+	if (!navigator.getUserMedia_)
 	{
 		document.getElementById('errorMessage').innerHTML =
 			'Sorry. <code>navigator.getUserMedia()</code> is not available.';
 	} else {
-		navigator.getUserMedia({video: true}, gotStream, noStream);
+		navigator.getUserMedia_({video: true}, gotStream, noStream);
 	}
 
 function gotStream(stream)
 {
+	console.log("gotStream");
 	if (window.URL)
-	{   camvideo.src = window.URL.createObjectURL(stream);   }
-	else // Opera
+	{   
+		try {
+			console.log("Setting camVideo.srcObject");
+			camvideo.srcObject = stream;
+		} catch (error) {
+			console.log(error);
+			console.log("oops = setting camVideo.src");
+			camvideo.src = window.URL.createObjectURL(stream);
+		}
+	} else // Opera
 	{   camvideo.src = stream;   }
 
 	camvideo.onerror = function(e)
-	{   stream.stop();   };
+	{   stream.stop(); alert("Webcam error"); alert(e)  };
 
 	stream.onended = noStream;
 }
