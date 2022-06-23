@@ -6060,4 +6060,25 @@ return putResult;
 }
   </script>
 </head>
+<body>
+    <fieldset>
+        <legend>Add new record</legend>
+        <input type="text" id="userId" placeholder="User ID" />
+        <input type="text" id="parentId" placeholder="Parent ID" />
+        <input type="text" id="distName" placeholder="Name" />
+        <input type="text" id="ytdPv" placeholder="PV" />
+        <input type="text" id="ytdGv" placeholder="GV" />
+        <button onclick="dbh.webdb.addDownline();">Add Entry</button>
+    </fieldset>
+        
+        <br/>
+        <input type="checkbox" id="rangeEnabled" onchange="toggleRange(this.checked);" />
+        <input type="range" id="queryRange" min="0" max="1000000" value="20000" onChange="dbh.webdb.getDownline(renderDownline);" disabled="true"/>
+        <input type="text" id="queryRangeText" size="50"/>
+        <br/>
+        <input type="text" id="queryString" size="20" onkeyup="dbh.webdb.getDownline(renderDownline);"/>
+        <input type="range" id="page" min="1" value="1" max="60" onChange="dbh.webdb.getDownline(renderDownline);"/>
+        <span id="results" width="600" height="700"/>
+        
+</body>
 </html>
